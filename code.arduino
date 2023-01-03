@@ -1,0 +1,226 @@
+#include <ESP8266WiFi.h>
+#include <algorithm>
+WiFiClient client;
+WiFiServer server(80);
+const char* SSID = "YOUR SSID";
+const char* password = "YOUR PASSWORD";
+String  command =""; // Command received from Android device
+String list[100];
+int i=0;
+// Set Motor Control Pins
+int rightMotor2 = 13;    // D7 - right Motor -
+int rightMotor1 = 15;    // D8 - right Motor +
+int leftMotor2 = 0;    // D3 - left Motor - 
+int leftMotor1 = 2;    // D4 - left Motor +
+int eneLeftMotor = 12;  // D6 - enable Mortor Left
+int eneRightMotor = 14; // D5 - enable Mortor Right
+
+void setup()
+{
+  Serial.begin(115200);
+
+  pinMode(eneLeftMotor, OUTPUT); 
+  pinMode(eneRightMotor, OUTPUT); 
+  pinMode(leftMotor1, OUTPUT); 
+  pinMode(leftMotor2, OUTPUT);  
+  pinMode(rightMotor1, OUTPUT);  
+  pinMode(rightMotor2, OUTPUT);  
+
+  digitalWrite(eneLeftMotor,LOW);
+  digitalWrite(eneRightMotor,LOW);
+  digitalWrite(leftMotor1,LOW);
+  digitalWrite(leftMotor2,LOW);
+  digitalWrite(rightMotor1,LOW);
+  digitalWrite(rightMotor2,LOW);
+      
+  connectWiFi();
+  server.begin();
+}
+
+void loop()
+{
+    client = server.available();
+    if (!client) return; 
+    command = check client ();
+     
+         if (command == "forward" || command == "frente" || command == "a frente")
+         
+         {  
+          list[i]=command;
+         forwardMotor();
+         }
+    else if (command == "reverse" || command == "reverso"|| command == "voltar") {list[i]=command;
+    reverseMotor();
+    }
+    else if (command == "left"    || command == "esquerda") {list[i]=command;
+    leftMotor(); 
+    }     
+    else if (command == "right"   || command == "direita") {list[i]=command;
+    rightMotor();   
+    }  
+    else if (command == "stop"    || command == "pare" || command == "parar" || command == "parando"){
+      tracinglist(list);
+      stopmotor();
+        
+     
+    sendBackEcho(command); // send command echo back to android device
+    command = ""; 
+    i+=1;  
+    
+}
+void reverse_list(String list){
+
+ String new_list[100];
+ int k=0;
+ for (int i = 100; i >=0 ; i--) {
+
+ new_list[k]=list[i];
+ k+=;
+ }
+ for (int i=0;i<100;i++){
+   list[i]=new_list[i]
+  }
+}     
+
+void tracinglist(String list)
+{ 
+  for (int i=0;i<100;i++){
+    if list[i]=="forward"{
+      forwardMotor();
+      delay(5000)
+    }
+    else if list[i]=="reverse"{
+      reverseMotor();
+      delay(5000)
+    }
+   else if list[i]=="left"{
+      leftMotor();
+      delay(5000)
+    }
+    else if list[i]=="right"{
+      rightMotor();
+      delay(5000)
+    }
+
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  }
+void forwardMotor(void)   
+{
+  digitalWrite(eneLeftMotor,HIGH);
+  digitalWrite(eneRightMotor,HIGH);
+    
+  digitalWrite(leftMotor1,HIGH);
+  digitalWrite(leftMotor2,LOW);
+  digitalWrite(rightMotor1,HIGH);
+  digitalWrite(rightMotor2,LOW);
+  delay(3000);
+}
+
+/* command motor backward */
+void reverseMotor(void)   
+{
+  digitalWrite(eneLeftMotor,HIGH);
+  digitalWrite(eneRightMotor,HIGH);
+  
+  digitalWrite(leftMotor1,LOW);
+  digitalWrite(leftMotor2,HIGH);
+  digitalWrite(rightMotor1,LOW);
+  digitalWrite(rightMotor2,HIGH);
+  delay(3000);
+}
+
+/* command motor turn left */
+void leftMotor(void)   
+{
+  digitalWrite(eneLeftMotor,HIGH);
+  digitalWrite(eneRightMotor,HIGH); 
+  
+  digitalWrite(leftMotor1,LOW);
+  digitalWrite(leftMotor2,HIGH);
+  digitalWrite(rightMotor1,HIGH);
+  digitalWrite(rightMotor2,LOW);
+  
+}
+
+/* command motor turn right */
+void rightmotor(void)   
+{
+  digitalWrite(eneLeftMotor,HIGH);
+  digitalWrite(eneRightMotor,HIGH);
+  
+  digitalWrite(leftMotor1,HIGH);
+  digitalWrite(leftMotor2,LOW);
+  digitalWrite(rightMotor1,LOW);
+  digitalWrite(rightMotor2,HIGH);
+  
+}
+
+/* command motor stop */
+void stopMotor(void)   
+{
+  digitalWrite(eneLeftMotor,LOW);
+  digitalWrite(eneRightMotor,LOW);
+
+  digitalWrite(leftMotor1,LOW);
+  digitalWrite(leftMotor2,LOW);
+  digitalWrite(rightMotor1,LOW);
+  digitalWrite(rightMotor2,LOW);
+}
+
+/* connecting WiFi */
+void connectWiFi()
+{
+  Serial.println("Connecting to WIFI");
+  WiFi.begin(ssid, password);
+  while ((!(WiFi.status() == WL_CONNECTED)))
+  {
+    delay(300);
+    Serial.print("..");
+  }
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("NodeMCU Local IP is : ");
+  Serial.print((WiFi.localIP()));
+}
+
+/* check command received from Android Device */
+String check client (void)
+{
+  while(!client.available()) delay(1); 
+  String request = client.readStringUntil('\r');
+  request.remove(0, 5);
+  request.remove(request.length()-9,9);
+  return request;
+}
+
+/* send command echo back to android device */
+void sendBackEcho(String echo)
+{
+  client.println("HTTP/1.1 200 OK");
+  client.println("Content-Type: text/html");
+  client.println("");
+  client.println("<!DOCTYPE HTML>");
+  client.println("<html>");
+  client.println(echo);
+  client.println("</html>");
+  client.stop();
+  delay(1);
+}
+
+   
+   
+}
